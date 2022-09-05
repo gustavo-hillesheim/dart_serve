@@ -1,0 +1,3 @@
+class Get {
+  const Get();
+}
