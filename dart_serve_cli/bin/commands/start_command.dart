@@ -34,8 +34,8 @@ class StartCommand extends Command {
     print('Starting app...');
     await Process.start(
       'dart',
-      ['run', 'main.dart'],
-      workingDirectory: outputPath,
+      ['run', '--enable-vm-service', join(outputPath, 'main.dart')],
+      workingDirectory: projectDirectory.absolute.path,
       mode: ProcessStartMode.inheritStdio,
     );
   }

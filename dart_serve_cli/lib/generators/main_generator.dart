@@ -26,22 +26,29 @@ class MainGenerator extends GeneratorForProject {
       List<ResolvedLibraryResult> projectLibraries) {
     final handlerDefinition = _getHandlerDefinitions(projectLibraries);
     final content = '''
+import 'dart:io';
+
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf/shelf_io.dart' as io;
+import 'package:dart_serve/dart_serve.dart';
 
 ${handlerDefinition.map((h) {
       return "import 'routes/${h.libraryName}.dart' as ${h.libraryName};";
     }).join('\n')}
 
-void main() async {
+void main() => serveWithHotReload(createServer);
+
+Future<HttpServer> createServer() {
   final router = Router();
 
 ${handlerDefinition.map((h) {
       return "  router.mount('${h.path}', ${h.libraryName}.${h.createMethodName}());";
     }).join('\n')}
 
-  io.serve(router, 'localhost', 8080);
-  print('Started server in port 8080');
+  return io.serve(router, InternetAddress.anyIPv4, 8080).then((server) {
+    print('Started server at \${server.address.address}:\${server.port}');
+    return server;
+  });
 }
 ''';
     return GeneratedFile(
