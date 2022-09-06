@@ -26,22 +26,23 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '${library.identifier}';
 
-void install(Router app) {
+Handler create${member.name.name}Handler() {
   final instance = ${member.name.name}();
-''';
-      for (final route in routes) {
-        generatedCode += '''
-  app.${route.restMethod.name}('/${route.path}', (Request request) async {
-    return Response.ok(await instance.${route.instanceMethodName}());
-  });
-''';
-      }
-      generatedCode += '''
+  const pipeline = Pipeline();
+  final router = Router();
+
+  ${routes.map((r) {
+        return '''router.${r.restMethod.name}('${r.path}', (Request request) async {
+    return Response.ok(await instance.${r.instanceMethodName}());
+  });''';
+      }).join('\n')}
+
+  return pipeline.addHandler(router);
 }
 ''';
       return GeneratorResult.single(
         path:
-            '$outputDir/lib/routes/${LibraryUtils.createRoutesLibraryName(library.identifier)}.dart',
+            '$outputDir/routes/${LibraryUtils.createRoutesLibraryName(library.identifier)}.dart',
         content: generatedCode,
       );
     }
@@ -52,11 +53,13 @@ void install(Router app) {
     final methods = member.members.whereType<MethodDeclaration>();
     final getRoutes = methods
         .where((m) => m.metadata.any((m) => m.name.name == 'Get'))
-        .map((m) => _Route(
-              restMethod: _RouteMethod.get,
-              path: m.name.name,
-              instanceMethodName: m.name.name,
-            ));
+        .map((m) {
+      return _Route(
+        restMethod: _RouteMethod.get,
+        path: '/${m.name.name}',
+        instanceMethodName: m.name.name,
+      );
+    });
     return getRoutes.toList();
   }
 }

@@ -19,21 +19,23 @@ class StartCommand extends Command {
       normalize(join(Directory.current.absolute.path, projectRelativePath)),
     );
     print('Building app at ${projectDirectory.path}...');
-    final outputProjectDir = relative(
-      'dart_serve_${DateTime.now().millisecondsSinceEpoch}',
+    final outputPath = relative(
+      '.dart_serve',
       from: projectDirectory.absolute.path,
     );
+    final outputDirectory = Directory(outputPath);
+    if (await outputDirectory.exists()) {
+      await outputDirectory.delete(recursive: true);
+    }
     await generateProject(
       sourceDirectory: projectDirectory,
-      outputDirectory: Directory(outputProjectDir),
+      outputDirectory: outputDirectory,
     );
     print('Starting app...');
-    await Process.run('dart', ['pub', 'get'],
-        workingDirectory: outputProjectDir);
     await Process.start(
       'dart',
-      ['run', 'lib/main.dart'],
-      workingDirectory: outputProjectDir,
+      ['run', 'main.dart'],
+      workingDirectory: outputPath,
       mode: ProcessStartMode.inheritStdio,
     );
   }
