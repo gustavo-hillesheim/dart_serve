@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart';
 import 'package:args/command_runner.dart';
+import 'package:code_generator/code_generator.dart';
 import 'package:dart_serve_cli/dart_serve_cli.dart';
 
 class StartCommand extends Command {
@@ -27,11 +28,14 @@ class StartCommand extends Command {
     if (await outputDirectory.exists()) {
       await outputDirectory.delete(recursive: true);
     }
-    await generateProject(
+    // TODO: Add trace logs of generation steps
+    final generationStepStream = generateProject(
       sourceDirectory: projectDirectory,
       outputDirectory: outputDirectory,
-    );
-    print('Starting app...');
+    ).asBroadcastStream();
+    await generationStepStream
+        .firstWhere((step) => step is FinishedWritingFilesStep);
+    print('Starting app at http://localhost:8080...');
     await Process.start(
       'dart',
       ['run', '--enable-vm-service', join(outputPath, 'main.dart')],

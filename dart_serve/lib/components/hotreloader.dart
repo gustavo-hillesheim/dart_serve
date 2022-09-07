@@ -6,5 +6,10 @@ import 'package:shelf_hotreload/shelf_hotreload.dart';
 void serveWithHotReload(
   FutureOr<HttpServer> Function() createServerFn,
 ) {
-  withHotreload(createServerFn, logLevel: Level.WARNING);
+  // TODO: Add delay to only reload application after code generation finishes
+  // TODO: Add custom logs on reload
+  withHotreload(
+    createServerFn,
+    logLevel: Level.WARNING,
+  );
 }

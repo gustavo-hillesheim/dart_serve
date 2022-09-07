@@ -31,8 +31,8 @@ Handler create${member.name.name}Handler() {
   const pipeline = Pipeline();
   final router = Router();
 
-  ${routes.map((r) {
-        return '''router.${r.restMethod.name}('${r.path}', (Request request) async {
+${routes.map((r) {
+        return '''  router.${r.restMethod.name}('${r.path}', (Request request) async {
     return Response.ok(await instance.${r.instanceMethodName}());
   });''';
       }).join('\n')}

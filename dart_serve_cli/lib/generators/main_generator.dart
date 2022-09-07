@@ -6,14 +6,8 @@ import '../utils/library_utils.dart';
 
 class MainGenerator extends GeneratorForProject {
   final String outputDir;
-  final String sourceDir;
-  final String packageName;
 
-  MainGenerator({
-    required this.outputDir,
-    required this.sourceDir,
-    required this.packageName,
-  });
+  MainGenerator({required this.outputDir});
 
   @override
   GeneratorResult generate(List<ResolvedLibraryResult> members) {
@@ -45,10 +39,7 @@ ${handlerDefinition.map((h) {
       return "  router.mount('${h.path}', ${h.libraryName}.${h.createMethodName}());";
     }).join('\n')}
 
-  return io.serve(router, InternetAddress.anyIPv4, 8080).then((server) {
-    print('Started server at \${server.address.address}:\${server.port}');
-    return server;
-  });
+  return io.serve(router, InternetAddress.anyIPv4, 8080);
 }
 ''';
     return GeneratedFile(
@@ -71,23 +62,19 @@ ${handlerDefinition.map((h) {
 
   List<_HandlerDefinition> _getHandlerDefinitions(
       List<ResolvedLibraryResult> libraries) {
-    return libraries
-        .where(_libraryContainsController)
-        .map((l) {
-          final libraryName =
-              LibraryUtils.createRoutesLibraryName(l.element.identifier);
-          final controllers = _getControllers(l);
-          return controllers.map((c) {
-            final path = _getControllerPath(c);
-            return _HandlerDefinition(
-              libraryName: libraryName,
-              createMethodName: 'create${c.name.name}Handler',
-              path: path,
-            );
-          });
-        })
-        .reduce((h1, h2) => [...h1, ...h2])
-        .toList();
+    return libraries.where(_libraryContainsController).map((l) {
+      final libraryName =
+          LibraryUtils.createRoutesLibraryName(l.element.identifier);
+      final controllers = _getControllers(l);
+      return controllers.map((c) {
+        final path = _getControllerPath(c);
+        return _HandlerDefinition(
+          libraryName: libraryName,
+          createMethodName: 'create${c.name.name}Handler',
+          path: path,
+        );
+      });
+    }).fold<List<_HandlerDefinition>>([], (h1, h2) => [...h1, ...h2]);
   }
 
   List<ClassDeclaration> _getControllers(ResolvedLibraryResult library) {
