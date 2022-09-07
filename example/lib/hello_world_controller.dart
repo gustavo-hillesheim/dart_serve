@@ -1,8 +1,8 @@
 import 'package:dart_serve/dart_serve.dart';
 
-@RestController('/')
+@RestController()
 class HelloWorldController {
-  @Get()
+  @Get(path: 'hello-world')
   Future<String> helloWorld() async {
     return 'Hello World!';
   }

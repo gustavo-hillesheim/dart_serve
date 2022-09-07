@@ -11,6 +11,10 @@ dependencies:
   path:
   args:
   analyzer:
+  dart_serve:
+    git: 
+      url: https://github.com/gustavo-hillesheim/dart_serve
+      path: dart_serve
   code_generator:
     git: https://github.com/gustavo-hillesheim/dart_code_generator
 

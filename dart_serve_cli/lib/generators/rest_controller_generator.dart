@@ -1,5 +1,8 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/constant/value.dart';
 import 'package:code_generator/code_generator.dart';
+import 'package:dart_serve/dart_serve.dart';
+import 'package:collection/collection.dart';
 
 import '../utils/library_utils.dart';
 
@@ -16,7 +19,7 @@ class RestControllerGenerator extends GeneratorForClass {
 
   @override
   GeneratorResult generate(ClassDeclaration member, String path) {
-    final routes = _findRoutes(member);
+    final routes = _findEndpoints(member);
     final library = member.declaredElement2!.library;
     if (routes.isNotEmpty) {
       String generatedCode = '''
@@ -32,7 +35,7 @@ Handler create${member.name2}Handler() {
   final router = Router();
 
 ${routes.map((r) {
-        return '''  router.${r.restMethod.name}('${r.path}', (Request request) async {
+        return '''  router.${r.httpMethod.name}('${r.path}', (Request request) async {
     return Response.ok(await instance.${r.instanceMethodName}());
   });''';
       }).join('\n')}
@@ -49,31 +52,63 @@ ${routes.map((r) {
     return GeneratorResult([]);
   }
 
-  List<_Route> _findRoutes(ClassDeclaration member) {
+  List<_Endpoint> _findEndpoints(ClassDeclaration member) {
     final methods = member.members.whereType<MethodDeclaration>();
-    final getRoutes = methods
-        .where((m) => m.metadata.any((m) => m.name.name == 'Get'))
-        .map((m) {
-      return _Route(
-        restMethod: _RouteMethod.get,
-        path: '/${m.name2}',
-        instanceMethodName: m.name2.toString(),
-      );
-    });
-    return getRoutes.toList();
+    const endpointAnnotationsNames = [
+      'Get',
+      'Put',
+      'Post',
+      'Delete',
+      'Patch',
+      'Endpoint'
+    ];
+    return methods.map<Iterable<_Endpoint>>((method) {
+      final endpointAnnotations = method.metadata
+          .where((m) => endpointAnnotationsNames.contains(m.name.name))
+          .map((m) => m.elementAnnotation?.computeConstantValue())
+          .whereType<DartObject>();
+      return endpointAnnotations.map((e) {
+        final path =
+            e.getInheritedField('path')?.toStringValue() ?? '${method.name2}';
+        final methods = e
+                .getInheritedField('methods')
+                ?.toListValue()
+                ?.map((o) =>
+                    HttpMethod.fromString(o.getField('_name')?.toStringValue()))
+                .whereType<HttpMethod>() ??
+            [];
+        return methods.map((httpMethod) => _Endpoint(
+              httpMethod: httpMethod,
+              path: path.startsWith('/') ? path : '/$path',
+              instanceMethodName: method.name2.toString(),
+            ));
+      }).fold([], (acc, v) => [...acc, ...v]);
+    }).fold(<_Endpoint>[], (acc, v) => [...acc, ...v]);
   }
 }
 
-class _Route {
-  final _RouteMethod restMethod;
+class _Endpoint {
+  final HttpMethod httpMethod;
   final String instanceMethodName;
   final String path;
 
-  const _Route({
-    required this.restMethod,
+  const _Endpoint({
+    required this.httpMethod,
     required this.instanceMethodName,
     required this.path,
   });
 }
 
-enum _RouteMethod { get }
+extension on DartObject {
+  DartObject? getInheritedField(String name) {
+    DartObject? object = this;
+    while (object != null) {
+      final value = object.getField(name);
+      if (value != null) {
+        return value;
+      }
+      object = object.getField('(super)');
+    }
+    return null;
+  }
+}

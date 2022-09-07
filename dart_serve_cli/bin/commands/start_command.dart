@@ -19,6 +19,12 @@ class StartCommand extends Command {
     final projectDirectory = Directory(
       normalize(join(Directory.current.absolute.path, projectRelativePath)),
     );
+    final pubspecPath = join(projectRelativePath, 'pubspec.yaml');
+    if (!await File(pubspecPath).exists()) {
+      print(
+          'Cannot build app. "${projectDirectory.absolute.path}" does not contain a pubspec.yaml file');
+      return;
+    }
     print('Building app at ${projectDirectory.path}...');
     final outputPath = relative(
       '.dart_serve',
