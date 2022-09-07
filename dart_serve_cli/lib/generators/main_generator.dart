@@ -70,7 +70,7 @@ ${handlerDefinition.map((h) {
         final path = _getControllerPath(c);
         return _HandlerDefinition(
           libraryName: libraryName,
-          createMethodName: 'create${c.name.name}Handler',
+          createMethodName: 'create${c.name2}Handler',
           path: path,
         );
       });
@@ -93,7 +93,11 @@ ${handlerDefinition.map((h) {
   String _getControllerPath(ClassDeclaration controller) {
     final restControllerAnnotation =
         controller.metadata.firstWhere((m) => m.name.name == 'RestController');
-    final path = restControllerAnnotation.getProperty<String>('path') ?? '/';
+    final path = restControllerAnnotation.elementAnnotation!
+            .computeConstantValue()
+            ?.getField('path')
+            ?.toStringValue() ??
+        '/';
     if (!path.startsWith('/')) {
       return '/$path';
     }

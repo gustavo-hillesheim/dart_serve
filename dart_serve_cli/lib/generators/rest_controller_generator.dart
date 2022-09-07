@@ -17,7 +17,7 @@ class RestControllerGenerator extends GeneratorForClass {
   @override
   GeneratorResult generate(ClassDeclaration member, String path) {
     final routes = _findRoutes(member);
-    final library = member.declaredElement!.library;
+    final library = member.declaredElement2!.library;
     if (routes.isNotEmpty) {
       String generatedCode = '''
 import 'package:shelf/shelf.dart';
@@ -26,8 +26,8 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '${library.identifier}';
 
-Handler create${member.name.name}Handler() {
-  final instance = ${member.name.name}();
+Handler create${member.name2}Handler() {
+  final instance = ${member.name2}();
   const pipeline = Pipeline();
   final router = Router();
 
@@ -56,8 +56,8 @@ ${routes.map((r) {
         .map((m) {
       return _Route(
         restMethod: _RouteMethod.get,
-        path: '/${m.name.name}',
-        instanceMethodName: m.name.name,
+        path: '/${m.name2}',
+        instanceMethodName: m.name2.toString(),
       );
     });
     return getRoutes.toList();
