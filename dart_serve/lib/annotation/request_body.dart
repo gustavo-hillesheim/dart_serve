@@ -1,0 +1,3 @@
+class RequestBody {
+  const RequestBody();
+}

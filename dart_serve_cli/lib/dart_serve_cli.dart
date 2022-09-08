@@ -6,8 +6,6 @@ import 'package:path/path.dart';
 import 'generators/main_generator.dart';
 import 'generators/rest_controller_generator.dart';
 
-// TODO: Add dependecy injection
-
 Stream<GenerationStep> generateProject({
   required Directory sourceDirectory,
   required Directory outputDirectory,

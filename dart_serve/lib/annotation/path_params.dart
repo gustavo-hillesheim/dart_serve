@@ -1,0 +1,3 @@
+class PathParams {
+  const PathParams();
+}

@@ -1,0 +1,3 @@
+class QueryParams {
+  const QueryParams();
+}
