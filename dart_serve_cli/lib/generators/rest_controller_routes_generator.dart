@@ -5,10 +5,10 @@ import 'package:dart_serve/dart_serve.dart';
 
 import '../utils/library_utils.dart';
 
-class RestControllerGenerator extends GeneratorForClass {
+class RestControllerRoutesGenerator extends GeneratorForClass {
   final String outputDir;
 
-  RestControllerGenerator(this.outputDir);
+  RestControllerRoutesGenerator(this.outputDir);
 
   @override
   bool shouldGenerateFor(ClassDeclaration member, String path) {
@@ -23,20 +23,19 @@ class RestControllerGenerator extends GeneratorForClass {
     if (routes.isNotEmpty) {
       // TODO: Add support to access Request in handler
       // TODO: Add support for multiple return types
-      // TODO: Add dependecy injection on controllers
       String generatedCode = '''
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
+import 'package:dart_serve/dart_serve.dart';
 
 import '${library.identifier}';
 
 Handler create${member.name2}Handler() {
-  final instance = ${member.name2}();
   const pipeline = Pipeline();
   final router = Router();
 
 ${routes.map((r) {
-        return '''  router.${r.httpMethod.name}('${r.path}', ${_buildRequestHandler(r)});''';
+        return '''  router.${r.httpMethod.name}('${r.path}', ${_buildRequestHandler(r, member.name2.toString())});''';
       }).join('\n')}
 
   return pipeline.addHandler(router);
@@ -44,17 +43,20 @@ ${routes.map((r) {
 ''';
       return GeneratorResult.single(
         path:
-            '$outputDir/routes/${LibraryUtils.createRoutesLibraryName(library.identifier)}.dart',
+            '$outputDir/routes/${LibraryUtils.getLibraryName(library.identifier)}.dart',
         content: generatedCode,
       );
     }
     return GeneratorResult([]);
   }
 
-  String _buildRequestHandler(_EndpointConfiguration endpointConfiguration) {
+  String _buildRequestHandler(
+      _EndpointConfiguration endpointConfiguration, String controllerName) {
     String requestHandler = '(Request request) async {\n';
     requestHandler +=
-        'return Response.ok(await instance.${endpointConfiguration.instanceMethodName}(\n';
+        'final controller = ServiceLocator.locate<$controllerName>();\n';
+    requestHandler +=
+        'return Response.ok(await controller.${endpointConfiguration.instanceMethodName}(\n';
     final orderedParameters = [...endpointConfiguration.parameters]..sort();
     for (final parameter in orderedParameters) {
       if (parameter.type == _ParameterType.positional) {

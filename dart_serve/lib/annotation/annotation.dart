@@ -12,3 +12,5 @@ export 'path_params.dart';
 export 'query_param.dart';
 export 'query_params.dart';
 export 'request_body.dart';
+export 'inject.dart';
+export 'injectable.dart';

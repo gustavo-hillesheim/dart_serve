@@ -1,0 +1,3 @@
+class Inject {
+  const Inject();
+}

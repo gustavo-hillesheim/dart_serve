@@ -41,7 +41,6 @@ class StartCommand extends Command {
     ).asBroadcastStream();
     await generationStepStream
         .firstWhere((step) => step is FinishedWritingFilesStep);
-    print('Starting app at http://localhost:8080...');
     await Process.start(
       'dart',
       ['run', '--enable-vm-service', join(outputPath, 'main.dart')],

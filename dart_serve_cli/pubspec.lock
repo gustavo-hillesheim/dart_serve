@@ -46,11 +46,9 @@ packages:
   code_generator:
     dependency: "direct main"
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: ca2e1deb4c967a44c55092e56d6261ecc202370d
-      url: "https://github.com/gustavo-hillesheim/dart_code_generator"
-    source: git
+      path: "../../code_generator"
+      relative: true
+    source: path
     version: "1.0.0"
   collection:
     dependency: transitive
@@ -83,11 +81,9 @@ packages:
   dart_serve:
     dependency: "direct main"
     description:
-      path: dart_serve
-      ref: HEAD
-      resolved-ref: f31efe1d1c4186feb0a06d20b4da5280ec3f5db6
-      url: "https://github.com/gustavo-hillesheim/dart_serve"
-    source: git
+      path: "../dart_serve"
+      relative: true
+    source: path
     version: "1.0.0"
   equatable:
     dependency: transitive
@@ -166,6 +162,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.6.4"
+  kiwi:
+    dependency: transitive
+    description:
+      name: kiwi
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.0.2"
   lints:
     dependency: "direct dev"
     description:

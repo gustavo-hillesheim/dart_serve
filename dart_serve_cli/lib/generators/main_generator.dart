@@ -26,6 +26,8 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:dart_serve/dart_serve.dart';
 
+import 'injectables_registry.dart' as injectables_registry;
+
 ${handlerDefinition.map((h) {
       return "import 'routes/${h.libraryName}.dart' as ${h.libraryName};";
     }).join('\n')}
@@ -39,6 +41,8 @@ ${handlerDefinition.map((h) {
       return "  router.mount('${h.path}', ${h.libraryName}.${h.createMethodName}());";
     }).join('\n')}
 
+  injectables_registry.registerInjectables();
+  print('Starting app at http://localhost:8080...');
   return io.serve(router, InternetAddress.anyIPv4, 8080);
 }
 ''';
@@ -48,23 +52,10 @@ ${handlerDefinition.map((h) {
     );
   }
 
-  bool _libraryContainsController(ResolvedLibraryResult library) {
-    for (final unit in library.units) {
-      for (final declaration in unit.unit.declarations) {
-        if (declaration is ClassDeclaration &&
-            declaration.metadata.any((m) => m.name.name == 'RestController')) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   List<_HandlerDefinition> _getHandlerDefinitions(
       List<ResolvedLibraryResult> libraries) {
     return libraries.where(_libraryContainsController).map((l) {
-      final libraryName =
-          LibraryUtils.createRoutesLibraryName(l.element.identifier);
+      final libraryName = LibraryUtils.getLibraryName(l.element.identifier);
       final controllers = _getControllers(l);
       return controllers.map((c) {
         final path = _getControllerPath(c);
@@ -77,17 +68,13 @@ ${handlerDefinition.map((h) {
     }).fold<List<_HandlerDefinition>>([], (h1, h2) => [...h1, ...h2]);
   }
 
+  bool _libraryContainsController(ResolvedLibraryResult library) {
+    return LibraryUtils.containsElementAnnotatedWith<ClassDeclaration>(
+        library, 'RestController');
+  }
+
   List<ClassDeclaration> _getControllers(ResolvedLibraryResult library) {
-    final controllers = <ClassDeclaration>[];
-    for (final unit in library.units) {
-      for (final declaration in unit.unit.declarations) {
-        if (declaration is ClassDeclaration &&
-            declaration.metadata.any((m) => m.name.name == 'RestController')) {
-          controllers.add(declaration);
-        }
-      }
-    }
-    return controllers;
+    return LibraryUtils.findAllClassesAnnotatedWith(library, 'RestController');
   }
 
   String _getControllerPath(ClassDeclaration controller) {
