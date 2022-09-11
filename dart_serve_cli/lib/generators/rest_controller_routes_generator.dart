@@ -1,4 +1,5 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:code_generator/code_generator.dart';
 import 'package:dart_serve/dart_serve.dart';
@@ -22,8 +23,9 @@ class RestControllerRoutesGenerator extends GeneratorForClass {
     final library = member.declaredElement2!.library;
     if (routes.isNotEmpty) {
       // TODO: Add support to access Request in handler
-      // TODO: Add support for multiple return types
       String generatedCode = '''
+import 'dart:convert';
+
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:dart_serve/dart_serve.dart';
@@ -55,18 +57,28 @@ ${routes.map((r) {
     String requestHandler = '(Request request) async {\n';
     requestHandler +=
         'final controller = ServiceLocator.locate<$controllerName>();\n';
-    requestHandler +=
-        'return Response.ok(await controller.${endpointConfiguration.instanceMethodName}(\n';
+    String responseAttribution = 'final response = ';
+    responseAttribution +=
+        endpointConfiguration.response.isAsync ? 'await ' : '';
+    responseAttribution +=
+        'controller.${endpointConfiguration.instanceMethodName}(\n';
     final orderedParameters = [...endpointConfiguration.parameters]..sort();
     for (final parameter in orderedParameters) {
       if (parameter.type == _ParameterType.positional) {
-        requestHandler += '${parameter.source.attributionStatement},\n';
+        responseAttribution += '${parameter.source.attributionStatement},\n';
       } else {
-        requestHandler +=
+        responseAttribution +=
             '${parameter.name}: ${parameter.source.attributionStatement},\n';
       }
     }
-    requestHandler += '));\n}';
+    responseAttribution += ');';
+    requestHandler += '$responseAttribution\n';
+    if (endpointConfiguration.response.isShelfResponse) {
+      requestHandler += 'return response;';
+    } else {
+      requestHandler += 'return Response.ok(jsonEncode(response));';
+    }
+    requestHandler += '\n}';
     return requestHandler;
   }
 
@@ -82,6 +94,7 @@ ${routes.map((r) {
             path: _normalizePath(endpointAnnotation.path ?? methodName),
             instanceMethodName: methodName,
             parameters: _readEndpointParameters(method) ?? [],
+            response: _readEndpointResponse(method),
           ));
         }
       }
@@ -91,6 +104,31 @@ ${routes.map((r) {
 
   String _normalizePath(String path) {
     return path.startsWith('/') ? path : '/$path';
+  }
+
+  _EndpointResponse _readEndpointResponse(MethodDeclaration method) {
+    final returnType = method.returnType?.type;
+    if (returnType == null) {
+      return const _EndpointResponse(
+        isAsync: true,
+        isShelfResponse: false,
+        isStream: false,
+      );
+    }
+    final isAsync =
+        returnType.isDartAsyncFuture || returnType.isDartAsyncFutureOr;
+    final actualReturnType = isAsync
+        ? (returnType as ParameterizedType).typeArguments.first
+        : returnType;
+    final isStream = actualReturnType.isDartAsyncStream;
+    final isShelfResponse = actualReturnType.element2?.name == 'Response' &&
+        actualReturnType.element2?.library?.identifier ==
+            'package:shelf/src/response.dart';
+    return _EndpointResponse(
+      isAsync: isAsync,
+      isStream: isStream,
+      isShelfResponse: isShelfResponse,
+    );
   }
 
   Iterable<Endpoint> _readEndPointAnnotations(MethodDeclaration method) {
@@ -219,12 +257,26 @@ class _EndpointConfiguration {
   final String instanceMethodName;
   final String path;
   final List<_EndpointParameter> parameters;
+  final _EndpointResponse response;
 
   const _EndpointConfiguration({
     required this.httpMethod,
     required this.instanceMethodName,
     required this.path,
     required this.parameters,
+    required this.response,
+  });
+}
+
+class _EndpointResponse {
+  final bool isAsync;
+  final bool isShelfResponse;
+  final bool isStream;
+
+  const _EndpointResponse({
+    required this.isAsync,
+    required this.isStream,
+    required this.isShelfResponse,
   });
 }
 
