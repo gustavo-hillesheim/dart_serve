@@ -21,9 +21,8 @@ class RestControllerRoutesGenerator extends GeneratorForClass {
   GeneratorResult generate(ClassDeclaration member, String path) {
     final routes = _findEndpoints(member);
     final library = member.declaredElement2!.library;
-    if (routes.isNotEmpty) {
-      // TODO: Add support to access Request in handler
-      String generatedCode = '''
+    // TODO: Add support to access Request in handler
+    String generatedCode = '''
 import 'dart:convert';
 
 import 'package:shelf/shelf.dart';
@@ -37,19 +36,17 @@ Handler create${member.name2}Handler() {
   final router = Router();
 
 ${routes.map((r) {
-        return '''  router.${r.httpMethod.name}('${r.path}', ${_buildRequestHandler(r, member.name2.toString())});''';
-      }).join('\n')}
+      return '''  router.${r.httpMethod.name}('${r.path}', ${_buildRequestHandler(r, member.name2.toString())});''';
+    }).join('\n')}
 
   return pipeline.addHandler(router);
 }
 ''';
-      return GeneratorResult.single(
-        path:
-            '$outputDir/routes/${LibraryUtils.getLibraryName(library.identifier)}.dart',
-        content: generatedCode,
-      );
-    }
-    return GeneratorResult([]);
+    return GeneratorResult.single(
+      path:
+          '$outputDir/routes/${LibraryUtils.getLibraryName(library.identifier)}.dart',
+      content: generatedCode,
+    );
   }
 
   String _buildRequestHandler(

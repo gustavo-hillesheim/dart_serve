@@ -11,4 +11,7 @@ class KiwiServiceLocator extends ServiceLocatorDelegate {
   @override
   void registerFactory<T>(InstanceFactory<T> factory) =>
       _container.registerSingleton((_) => factory(this));
+
+  @override
+  void clear() => _container.clear();
 }

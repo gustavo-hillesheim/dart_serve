@@ -6,6 +6,8 @@ class ServiceLocator {
   static void registerFactory<T>(InstanceFactory<T> factory) =>
       delegate.registerFactory<T>(factory);
 
+  static void clear() => delegate.clear();
+
   static T locate<T>() => delegate.locate<T>();
 
   static T call<T>() => locate<T>();
@@ -13,6 +15,7 @@ class ServiceLocator {
 
 abstract class ServiceLocatorDelegate {
   void registerFactory<T>(InstanceFactory<T> factory);
+  void clear();
   T locate<T>();
   T call<T>() => locate<T>();
 }

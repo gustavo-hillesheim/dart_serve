@@ -35,6 +35,7 @@ ${handlerDefinition.map((h) {
 void main() => serveWithHotReload(createServer);
 
 Future<HttpServer> createServer() {
+  ServiceLocator.clear();
   final router = Router();
 
 ${handlerDefinition.map((h) {
