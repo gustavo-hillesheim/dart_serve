@@ -88,7 +88,7 @@ ${routes.map((r) {
         for (final httpMethod in endpointAnnotation.methods) {
           endpoints.add(_EndpointConfiguration(
             httpMethod: httpMethod,
-            path: _normalizePath(endpointAnnotation.path ?? methodName),
+            path: _normalizePath(endpointAnnotation.path ?? ''),
             instanceMethodName: methodName,
             parameters: _readEndpointParameters(method) ?? [],
             response: _readEndpointResponse(method),
@@ -146,7 +146,7 @@ ${routes.map((r) {
 
   Endpoint _readEndpoint(DartObject annotation) {
     return Endpoint(
-      path: annotation.getInheritedField('path')?.toStringValue(),
+      annotation.getInheritedField('path')?.toStringValue(),
       methods: annotation
               .getInheritedField('methods')
               ?.toListValue()

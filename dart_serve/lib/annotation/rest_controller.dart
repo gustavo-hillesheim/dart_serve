@@ -1,7 +1,5 @@
 class RestController {
   final String? path;
 
-  const RestController({
-    this.path,
-  });
+  const RestController(this.path);
 }
