@@ -25,11 +25,11 @@ class PersonController {
   }
 
   @Get('<id>')
-  Response findOne(@PathParam() String? id) {
+  findOne(@PathParam() String? id) {
     if (id == null) {
       return Response.badRequest();
     }
-    return Response.ok(jsonEncode(service.findById(id)));
+    return service.findById(id);
   }
 
   @Delete('<id>')
