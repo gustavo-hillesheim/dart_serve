@@ -25,18 +25,12 @@ class PersonController {
   }
 
   @Get('<id>')
-  findOne(@PathParam() String? id) {
-    if (id == null) {
-      return Response.badRequest();
-    }
+  Person? findOne(@PathParam() String id) {
     return service.findById(id);
   }
 
   @Delete('<id>')
-  Response delete(@PathParam() String? id) {
-    if (id == null) {
-      return Response.badRequest();
-    }
+  Response delete(@PathParam() String id) {
     service.deleteById(id);
     return Response(HttpStatus.noContent);
   }

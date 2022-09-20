@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/constant/value.dart';
+import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:code_generator/code_generator.dart';
 import 'package:dart_serve/dart_serve.dart';
 
@@ -53,16 +54,25 @@ ${routes.map((r) {
     String requestHandler = '(Request request) async {\n';
     requestHandler +=
         'final controller = ServiceLocator.locate<$controllerName>();\n';
-    String responseAttribution = 'final response = ';
-    responseAttribution +=
-        'controller.${endpointConfiguration.instanceMethodName}(\n';
     final orderedParameters = [...endpointConfiguration.parameters]..sort();
     for (final parameter in orderedParameters) {
+      requestHandler +=
+          'final _parameter_${parameter.name} = ${parameter.source.attributionStatement};\n';
+      if (parameter.isRequired) {
+        requestHandler += 'if (_parameter_${parameter.name} == null) {'
+            'return Response.badRequest(body: \'${parameter.source.userFriendlyName} cannot be null\');'
+            '}\n';
+      }
+    }
+    String responseAttribution = 'final response = ';
+    responseAttribution +=
+        'controller.${endpointConfiguration.instanceMethodName}(';
+    for (final parameter in orderedParameters) {
       if (parameter.type == _ParameterType.positional) {
-        responseAttribution += '${parameter.source.attributionStatement},\n';
+        responseAttribution += '_parameter_${parameter.name},';
       } else {
         responseAttribution +=
-            '${parameter.name}: ${parameter.source.attributionStatement},\n';
+            '${parameter.name}: _parameter_${parameter.name},';
       }
     }
     responseAttribution += ');';
@@ -177,6 +187,8 @@ ${routes.map((r) {
       type: type,
       name: name,
       position: position,
+      isRequired: parameter.declaredElement?.type.nullabilitySuffix ==
+          NullabilitySuffix.none,
       source: _getParameterSource(parameter, annotation),
     );
   }
@@ -236,10 +248,12 @@ class _EndpointParameter implements Comparable<_EndpointParameter> {
   final _ParameterType type;
   final String? name;
   final int? position;
+  final bool isRequired;
 
   const _EndpointParameter({
     required this.source,
     required this.type,
+    required this.isRequired,
     this.name,
     this.position,
   });
@@ -262,6 +276,8 @@ class _EndpointParameter implements Comparable<_EndpointParameter> {
 
 abstract class _EndpointParameterSource {
   String get attributionStatement;
+  String get userFriendlyName;
+  bool get isNullable;
 }
 
 class _HeaderEndpointParameterSource implements _EndpointParameterSource {
@@ -272,12 +288,24 @@ class _HeaderEndpointParameterSource implements _EndpointParameterSource {
   });
 
   @override
+  String get userFriendlyName => 'Header "$headerName"';
+
+  @override
   String get attributionStatement => 'request.headers["$headerName"]';
+
+  @override
+  bool get isNullable => true;
 }
 
 class _AllHeadersEndpointParameterSource implements _EndpointParameterSource {
   @override
+  String get userFriendlyName => 'Headers';
+
+  @override
   String get attributionStatement => 'request.headers';
+
+  @override
+  bool get isNullable => false;
 }
 
 class _PathParamEndpointParameterSource implements _EndpointParameterSource {
@@ -288,13 +316,24 @@ class _PathParamEndpointParameterSource implements _EndpointParameterSource {
   });
 
   @override
+  String get userFriendlyName => 'Path parameter "$paramName"';
+
+  @override
   String get attributionStatement => 'request.params["$paramName"]';
+
+  @override
+  bool get isNullable => true;
 }
 
 class _AllPathParamsEndpointParameterSource
     implements _EndpointParameterSource {
   @override
+  String get userFriendlyName => 'Path parameters';
+  @override
   String get attributionStatement => 'request.params';
+
+  @override
+  bool get isNullable => false;
 }
 
 class _QueryParamEndpointParameterSource implements _EndpointParameterSource {
@@ -305,19 +344,35 @@ class _QueryParamEndpointParameterSource implements _EndpointParameterSource {
   });
 
   @override
+  String get userFriendlyName => 'Query parameter "$paramName"';
+
+  @override
   String get attributionStatement =>
       'request.url.queryParameters["$paramName"]';
+
+  @override
+  bool get isNullable => true;
 }
 
 class _AllQueryParamsEndpointParameterSource
     implements _EndpointParameterSource {
   @override
+  String get userFriendlyName => 'Query parameters';
+  @override
   String get attributionStatement => 'request.url.queryParameters';
+
+  @override
+  bool get isNullable => false;
 }
 
 class _RequestBodyEndpointParameterSource implements _EndpointParameterSource {
   @override
+  String get userFriendlyName => 'Body';
+  @override
   String get attributionStatement => 'await request.readAsString()';
+
+  @override
+  bool get isNullable => false;
 }
 
 enum _ParameterType {
