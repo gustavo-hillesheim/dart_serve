@@ -58,7 +58,7 @@ ${routes.map((r) {
     for (final parameter in orderedParameters) {
       requestHandler +=
           'final _parameter_${parameter.name} = ${parameter.source.attributionStatement};\n';
-      if (parameter.isRequired) {
+      if (parameter.isRequired && parameter.source.isNullable) {
         requestHandler += 'if (_parameter_${parameter.name} == null) {'
             'return Response.badRequest(body: \'${parameter.source.userFriendlyName} cannot be null\');'
             '}\n';
